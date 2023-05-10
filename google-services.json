@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "242913577415",
+    "project_id": "wherenext-d5f83",
+    "storage_bucket": "wherenext-d5f83.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:242913577415:android:25b8e8f67d607cfc0631e2",
+        "android_client_info": {
+          "package_name": "hu.ait.wherenext"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "242913577415-5tgi00c8uved9j8f7iak4717e6663hp7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEbDosiPM0iRo1WKL2n60PE924pE9p8kc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "242913577415-5tgi00c8uved9j8f7iak4717e6663hp7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
