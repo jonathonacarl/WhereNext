@@ -1,4 +1,4 @@
-package hu.ait.wherenext.ui.screen.main
+package hu.ait.wherenext.ui.screen.messages
 
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.ktx.auth
@@ -11,14 +11,15 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 
 
-sealed interface MainScreenUIState {
-    object Init : MainScreenUIState
+sealed interface MessageScreenUIState {
+    
+    object Init : MessageScreenUIState
 
-    data class Success(val postList: List<PinPostWithID>) : MainScreenUIState
-    data class Error(val error: String?) : MainScreenUIState
+    data class Success(val postList: List<PinPostWithID>) : MessageScreenUIState
+    data class Error(val error: String?) : MessageScreenUIState
 }
 
-class MainViewModel : ViewModel() {
+class MessagesViewModel : ViewModel() {
 
     var currentUserId: String = Firebase.auth.currentUser!!.uid
 
@@ -35,11 +36,11 @@ class MainViewModel : ViewModel() {
                             postWithIdList.add(PinPostWithID(snapshot.documents[index].id, post))
                         }
 
-                        MainScreenUIState.Success(
+                        MessageScreenUIState.Success(
                             postWithIdList
                         )
                     } else {
-                        MainScreenUIState.Error(e?.message.toString())
+                        MessageScreenUIState.Error(e?.message.toString())
                     }
 
                     trySend(response) // emit this value through the flow

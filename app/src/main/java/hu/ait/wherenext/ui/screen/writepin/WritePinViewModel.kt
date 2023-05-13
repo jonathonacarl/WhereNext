@@ -16,6 +16,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
+import hu.ait.wherenext.data.LatLng
 import hu.ait.wherenext.data.PinPost
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -43,7 +44,7 @@ class WritePinViewModel: ViewModel() {
     var writePinUiState: WritePinUiState by mutableStateOf(WritePinUiState.Init)
     private var auth: FirebaseAuth = Firebase.auth
 
-    fun uploadPinPost(title: String, postBody: String, imgUrl: String = "") {
+    fun uploadPinPost(title: String, postBody: String, imgUrl: String = "", location: LatLng) {
         writePinUiState = WritePinUiState.LoadingPostUpload
 
         val myPost = PinPost(
@@ -51,7 +52,8 @@ class WritePinViewModel: ViewModel() {
             author = auth.currentUser!!.email!!,
             title = title,
             body = postBody,
-            imgUrl = imgUrl
+            imgUrl = imgUrl,
+            location = location
         )
 
         val postsCollection = FirebaseFirestore.getInstance().collection(COLLECTION_POSTS)
@@ -67,7 +69,7 @@ class WritePinViewModel: ViewModel() {
     @RequiresApi(Build.VERSION_CODES.P)
     fun uploadPinPostImage(
         contentResolver: ContentResolver, imageUri: Uri,
-        title: String, postBody: String
+        title: String, postBody: String, location: LatLng
     ) {
         viewModelScope.launch {
             writePinUiState = WritePinUiState.LoadingImageUpload
@@ -95,7 +97,7 @@ class WritePinViewModel: ViewModel() {
 
                     newImagesRef.downloadUrl.addOnCompleteListener { task ->
                         // the public URL of the image is: task.result.toString()
-                        uploadPinPost(title, postBody, task.result.toString())
+                        uploadPinPost(title, postBody, task.result.toString(), location)
                     }
                 }
         }

@@ -1,20 +1,22 @@
 package hu.ait.wherenext.ui.screen.writepin
 
+import android.Manifest
 import android.content.Context
+import android.location.Address
+import android.location.Geocoder
 import android.net.Uri
 import android.os.Build
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -25,22 +27,42 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
+import hu.ait.wherenext.data.LatLng
+import hu.ait.wherenext.ui.screen.main.LocationViewModel
 import java.io.File
+import java.util.*
 
 @RequiresApi(Build.VERSION_CODES.P)
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
+
 fun WritePinScreen(
+    latitude: Double = 0.0,
+    longitude: Double = 0.0,
     onWritePinSuccess: () -> Unit = {},
     writePinViewModel: WritePinViewModel = viewModel(),
+    locationViewModel: LocationViewModel = viewModel(factory = LocationViewModel.factory),
 ) {
     var postTitle by remember { mutableStateOf("") }
     var postBody by remember { mutableStateOf("") }
-    val cameraPermissionState = rememberPermissionState(
-        android.Manifest.permission.CAMERA
+    var cityLocation by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf(LatLng(latitude, longitude)) }
+
+    val trackedLocations by locationViewModel.locationsFlow.collectAsState()
+    var addressList = mutableListOf<Address>()
+    var locationState = locationViewModel.getLocationLiveData().observeAsState()
+    val context = LocalContext.current
+    var geocoder = Geocoder(context, Locale.getDefault())
+    var geocodeText by remember { mutableStateOf("") }
+
+    val fineLocationPermissionState = rememberPermissionState(
+        Manifest.permission.ACCESS_FINE_LOCATION
     )
 
-    val context = LocalContext.current
+    val cameraPermissionState = rememberPermissionState(
+        Manifest.permission.CAMERA
+    )
+
     var hasImage by remember {
         mutableStateOf(false)
     }
@@ -54,10 +76,17 @@ fun WritePinScreen(
         }
     )
 
-
     Column(
         modifier = Modifier.padding(20.dp)
     ) {
+        if (fineLocationPermissionState.status.isGranted) {
+            Button(onClick = {
+                locationViewModel.getLocationLiveData().startLocationUpdates()
+            }) {
+                Text(text = "Start Location Monitoring")
+            }
+        }
+
         OutlinedTextField(value = postTitle,
             modifier = Modifier.fillMaxWidth(),
             label = { Text(text = "Post title") },
@@ -72,6 +101,27 @@ fun WritePinScreen(
                 postBody = it
             }
         )
+        Row {
+            OutlinedTextField(value = cityLocation,
+                modifier = Modifier.weight(0.3f),
+                label = { Text(text = "Location") },
+                onValueChange = {
+                    cityLocation = it
+                })
+
+            // if user allows for location tracking, display this button
+            if (fineLocationPermissionState.status.isGranted) {
+
+                Button(onClick = {
+                    locationViewModel.getLocationLiveData().startLocationUpdates()
+                    Log.d("First", locationState.toString())
+                    location = locationState.value?.let { LatLng(it.latitude, it.longitude) }!!
+                }) {
+                    Text(text = "Current Location")
+                }
+            }
+        }
+
 
         // permission here...
         if (cameraPermissionState.status.isGranted) {
@@ -99,14 +149,43 @@ fun WritePinScreen(
         }
 
         Button(onClick = {
+
+            var locationToEnter = LatLng(0.0, 0.0)
+
+            if (cityLocation.isNotEmpty()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    geocoder.getFromLocationName(cityLocation,
+                        3,
+                        object : Geocoder.GeocodeListener {
+                            override fun onGeocode(addresses: MutableList<Address>) {
+                                val address: Address = addresses[0]
+                                locationToEnter = LatLng(address.latitude, address.longitude)
+                            }
+
+                            override fun onError(errorMessage: String?) {
+                                geocodeText = errorMessage!!
+                                super.onError(errorMessage)
+                            }
+                        })
+                }
+            } else {
+                locationToEnter = LatLng(location.latitude, location.longitude)
+            }
+
+
             if (imageUri == null) {
-                writePinViewModel.uploadPinPost(postTitle, postBody)
+                writePinViewModel.uploadPinPost(
+                    title = postTitle,
+                    postBody = postBody,
+                    location = locationToEnter
+                )
             } else {
                 writePinViewModel.uploadPinPostImage(
-                    context.contentResolver,
-                    imageUri!!,
-                    postTitle,
-                    postBody
+                    contentResolver = context.contentResolver,
+                    imageUri = imageUri!!,
+                    title = postTitle,
+                    postBody = postBody,
+                    location = locationToEnter
                 )
             }
         }) {
@@ -130,8 +209,7 @@ fun WritePinScreen(
             is WritePinUiState.ErrorDuringPostUpload ->
                 Text(
                     text = "${
-                        (
-                                writePinViewModel.writePinUiState as WritePinUiState.ErrorDuringPostUpload).error
+                        (writePinViewModel.writePinUiState as WritePinUiState.ErrorDuringPostUpload).error
                     }"
                 )
 

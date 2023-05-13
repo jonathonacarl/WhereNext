@@ -1,6 +1,6 @@
 package hu.ait.wherenext.data
 
-import com.google.android.gms.maps.model.LatLng
+
 
 data class PinPost(
     var uid: String = "",
@@ -8,7 +8,7 @@ data class PinPost(
     var title: String = "",
     var body: String = "",
     var imgUrl: String = "",
-    var location: LatLng
+    var location: LatLng = LatLng(0.0, 0.0)
 )
 
 data class PinPostWithID(

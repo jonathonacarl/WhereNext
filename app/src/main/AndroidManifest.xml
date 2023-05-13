@@ -16,6 +16,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.WhereNext"
         tools:targetApi="31">
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyBckkL9QEjaL30iBeplbqjq3L6R1jLAHZs"/>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -34,7 +39,9 @@
             android:exported="false">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/filepaths" />
+                android:resource="@xml/filepaths"
+            />
+
         </provider>
 
     </application>
