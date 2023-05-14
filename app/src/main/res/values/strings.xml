@@ -1,4 +1,30 @@
 <resources>
     <string name="app_name">WhereNext</string>
     <string name="WhereNext">Where Next?</string>
+    <string name="post_title">Post title</string>
+    <string name="error">error</string>
+    <string name="initializing">Initializing...</string>
+    <string name="start_location_monitoring">Start location monitoring</string>
+    <string name="reconsider_giving_permission">Reconsider giving permission</string>
+    <string name="give_permission">Give permission for location</string>
+    <string name="request_permission">Request permission</string>
+    <string name="home">Home</string>
+    <string name="info">Info</string>
+    <string name="add">Add</string>
+    <string name="start_location">Start Location Monitoring</string>
+    <string name="request">Request permission</string>
+    <string name="givePermission">Give permission for using photos with items.</string>
+    <string name="reconsider">Please reconsider giving the camera permission. It is needed if you want to take a photo for the message.</string>
+    <string name="photo">Take photo</string>
+    <string name="currentLocation">Current Location</string>
+    <string name="location">Location</string>
+    <string name="postBody">Post body</string>
+    <string name="upload">Upload</string>
+    <string name="selectedImage">selected image</string>
+    <string name="uploaded">Post uploaded.</string>
+    <string name="imageUploaded">Image uploaded, starting post upload.</string>
+    <string name="images">images</string>
+    <string name="selected_image">selected_image_</string>
+    <string name="jpg">.jpg</string>
+    <string name="fileprovider">.fileprovider</string>
 </resources>

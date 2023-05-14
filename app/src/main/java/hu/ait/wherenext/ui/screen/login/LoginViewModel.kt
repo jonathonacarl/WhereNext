@@ -18,11 +18,10 @@ sealed interface LoginUiState {
     object RegisterSuccess : LoginUiState
     data class Error(val error: String?) : LoginUiState
 }
-class LoginViewModel() : ViewModel() {
+class LoginViewModel : ViewModel() {
     var loginUiState: LoginUiState by mutableStateOf(LoginUiState.Init)
 
     private var auth: FirebaseAuth = Firebase.auth
-
     suspend fun registerUser(email: String, password: String) {
         loginUiState = LoginUiState.Loading
         delay(2000)

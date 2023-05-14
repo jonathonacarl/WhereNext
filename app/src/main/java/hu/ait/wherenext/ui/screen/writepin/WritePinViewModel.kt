@@ -44,7 +44,7 @@ class WritePinViewModel: ViewModel() {
     var writePinUiState: WritePinUiState by mutableStateOf(WritePinUiState.Init)
     private var auth: FirebaseAuth = Firebase.auth
 
-    fun uploadPinPost(title: String, postBody: String, imgUrl: String = "", location: LatLng) {
+    fun uploadPinPost(title: String, postBody: String, imgUrl: String = "", location: LatLng, address: String) {
         writePinUiState = WritePinUiState.LoadingPostUpload
 
         val myPost = PinPost(
@@ -53,7 +53,8 @@ class WritePinViewModel: ViewModel() {
             title = title,
             body = postBody,
             imgUrl = imgUrl,
-            location = location
+            location = location,
+            address = address
         )
 
         val postsCollection = FirebaseFirestore.getInstance().collection(COLLECTION_POSTS)
@@ -69,7 +70,8 @@ class WritePinViewModel: ViewModel() {
     @RequiresApi(Build.VERSION_CODES.P)
     fun uploadPinPostImage(
         contentResolver: ContentResolver, imageUri: Uri,
-        title: String, postBody: String, location: LatLng
+        title: String, postBody: String, location: LatLng,
+        address: String
     ) {
         viewModelScope.launch {
             writePinUiState = WritePinUiState.LoadingImageUpload
@@ -97,7 +99,7 @@ class WritePinViewModel: ViewModel() {
 
                     newImagesRef.downloadUrl.addOnCompleteListener { task ->
                         // the public URL of the image is: task.result.toString()
-                        uploadPinPost(title, postBody, task.result.toString(), location)
+                        uploadPinPost(title, postBody, task.result.toString(), location, address)
                     }
                 }
         }

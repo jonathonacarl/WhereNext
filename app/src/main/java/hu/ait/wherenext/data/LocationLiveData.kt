@@ -24,7 +24,7 @@ class LocationLiveData(context: Context) : LiveData<Location>() {
     }
 
     @SuppressLint("MissingPermission")
-    public fun startLocationUpdates() {
+    fun startLocationUpdates() {
         fusedLocationClient.lastLocation
             .addOnSuccessListener { location: Location? ->
                 value = location

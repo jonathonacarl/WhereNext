@@ -1,11 +1,10 @@
 package hu.ait.wherenext.ui.screen.main
 
 import android.Manifest
-import android.location.Location
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.*
@@ -15,77 +14,95 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
-import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.*
 import hu.ait.wherenext.R
 import hu.ait.wherenext.navigation.Screen
-import kotlinx.coroutines.launch
+import hu.ait.wherenext.ui.screen.messages.MessageScreenUIState
+import hu.ait.wherenext.ui.screen.messages.MessagesViewModel
+import hu.ait.wherenext.ui.screen.messages.PinCard
 import java.util.*
-import kotlin.random.Random
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MainScreen(
-    onWriteNewPostClick: () -> Unit = {},
     locationViewModel: LocationViewModel = viewModel(factory = LocationViewModel.factory),
+    messagesViewModel: MessagesViewModel = viewModel(),
     navController: NavController,
+    latitude: Double,
+    longitude: Double
 ) {
+
+    val postListState = messagesViewModel.postsList().collectAsState(
+        initial = MessageScreenUIState.Init
+    )
+
+    var displayPost by remember { mutableStateOf("") }
+
+    var showPost by remember { mutableStateOf(false) }
+
+    var currentLocationPressed by remember { mutableStateOf(false) }
+
+    var firstLogin by remember { mutableStateOf(true) }
+
     Scaffold(
         topBar = {
             MainTopBar(
                 title = stringResource(R.string.WhereNext),
-                navController = navController
+                navController = navController,
+                currentLocationPressed = currentLocationPressed
             )
         },
         floatingActionButton = {
             MainFloatingActionButton(
-                onWriteNewPostClick = onWriteNewPostClick
+                onWriteNewPostClick = {
+                    navController.navigate(Screen.WritePin.route + "/${0.0}/${0.0}/${currentLocationPressed}")
+                    firstLogin = false
+                }
             )
-        }
+        },
+        floatingActionButtonPosition = FabPosition.Center
     ) { contentPadding ->
+
         // Screen content
         Column(modifier = Modifier.padding(contentPadding)) {
 
+            if (postListState.value == MessageScreenUIState.Init) {
+                Text(text = stringResource(R.string.initializing))
+            }
+
             val context = LocalContext.current
-            val coroutineScope = rememberCoroutineScope()
 
             val fineLocationPermissionState = rememberPermissionState(
                 Manifest.permission.ACCESS_FINE_LOCATION
             )
 
-            var cameraState = rememberCameraPositionState {
-                CameraPosition.fromLatLngZoom(
-                    com.google.android.gms.maps.model.LatLng(
-                        47.0,
-                        19.0
-                    ), 10f
-                )
-            }
-
-            var markerPosition = remember {
-                listOf(
-                    com.google.android.gms.maps.model.LatLng(
-                        1.35,
-                        103.87
-                    )
-                ).toMutableStateList()
-            }
-
-            var uiSettings by remember {
+            val uiSettings by remember {
                 mutableStateOf(
                     MapUiSettings(
                         zoomControlsEnabled = true,
                         zoomGesturesEnabled = true
                     )
                 )
+            }
+
+            val cameraPositionState = if (firstLogin) {
+                rememberCameraPositionState {
+                    position = CameraPosition.fromLatLngZoom(LatLng(latitude, longitude), 0f)
+                }
+            } else {
+                rememberCameraPositionState {
+                    position = CameraPosition.fromLatLngZoom(LatLng(latitude, longitude), 16f)
+                }
             }
 
             var mapProperties by remember {
@@ -104,27 +121,27 @@ fun MainScreen(
             if (fineLocationPermissionState.status.isGranted) {
                 Button(onClick = {
                     locationViewModel.getLocationLiveData().startLocationUpdates()
+                    currentLocationPressed = !currentLocationPressed
                 }) {
-                    Text(text = "Start location monitoring")
+                    Text(text = stringResource(R.string.start_location_monitoring))
                 }
             } else {
                 Column {
                     val permissionText =
                         if (fineLocationPermissionState.status.shouldShowRationale) {
-                            "Reconsider giving permission"
+                            stringResource(R.string.reconsider_giving_permission)
                         } else {
-                            "Give permission for location"
+                            stringResource(R.string.give_permission)
                         }
                     Text(text = permissionText)
                     Button(onClick = {
                         fineLocationPermissionState.launchPermissionRequest()
+                        currentLocationPressed = !currentLocationPressed
                     }) {
-                        Text(text = "Request permission")
+                        Text(text = stringResource(R.string.request_permission))
                     }
                 }
             }
-
-            var geocodeText by remember { mutableStateOf("") }
 
             var isSatellite by remember {
                 mutableStateOf(false)
@@ -142,32 +159,65 @@ fun MainScreen(
 
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraState,
                 uiSettings = uiSettings,
                 properties = mapProperties,
+                cameraPositionState = cameraPositionState,
                 onMapClick = {
-
-                    Log.d("Latitude", it.latitude.toString())
-                    Log.d("Longitude", it.longitude.toString())
-
-                    navController.navigate(Screen.WritePin.route + "/${it.latitude.toFloat()}/${it.longitude.toFloat()}")
-
-                    val random = Random(System.currentTimeMillis())
-                    val cameraPosition = CameraPosition.Builder()
-                        .target(it)
-                        .zoom(1f + random.nextInt(5))
-                        .tilt(30f + random.nextInt(15))
-                        .bearing(-45f + random.nextInt(90))
-                        .build()
-                    //cameraState.position = cameraPostion
-                    coroutineScope.launch {
-                        cameraState.animate(
-                            CameraUpdateFactory.newCameraPosition(cameraPosition), 3000
-                        )
-                    }
+                    navController.navigate(Screen.WritePin.route +
+                            "/${it.latitude.toFloat()}/${it.longitude.toFloat()}/${currentLocationPressed}"
+                    )
+                    firstLogin = false
                 }
             ) {
 
+                if (postListState.value is MessageScreenUIState.Success) {
+
+                    for (pinPost in (postListState.value as MessageScreenUIState.Success).postList) {
+
+                        Marker(
+                            state = rememberMarkerState(
+                                key = pinPost.pinPostID,
+                                position = LatLng(
+                                    pinPost.pinPost.location.latitude,
+                                    pinPost.pinPost.location.longitude
+                                )
+
+                            ),
+                            title = "${pinPost.pinPost.title} from ${pinPost.pinPost.author}",
+                            snippet = "Marker Location: ${pinPost.pinPost.address}",
+                            draggable = messagesViewModel.currentUserId == pinPost.pinPost.uid,
+                            onClick = {
+                                displayPost = pinPost.pinPostID
+                                showPost = true
+                                firstLogin = false
+                                true
+                            },
+                            tag = pinPost.pinPostID
+                        )
+
+                        if (displayPost == pinPost.pinPostID && showPost) {
+                            Dialog(onDismissRequest = { showPost = false }) {
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .wrapContentHeight(),
+                                    shape = RoundedCornerShape(size = 6.dp)
+                                ) {
+
+                                    Column {
+                                        PinCard(
+                                            pinPost = pinPost.pinPost,
+                                            currentUserId = messagesViewModel.currentUserId,
+                                            navController = navController
+                                        )
+                                    }
+                                }
+                            }
+
+                        }
+
+                    }
+                }
             }
         }
     }
@@ -187,7 +237,7 @@ fun MainFloatingActionButton(
     ) {
         Icon(
             imageVector = Icons.Rounded.Add,
-            contentDescription = "Add",
+            contentDescription = stringResource(R.string.add),
             tint = Color.White,
         )
     }
@@ -198,6 +248,7 @@ fun MainFloatingActionButton(
 fun MainTopBar(
     title: String,
     navController: NavController,
+    currentLocationPressed: Boolean
 ) {
     TopAppBar(
         title = { Text(title) },
@@ -206,21 +257,19 @@ fun MainTopBar(
             MaterialTheme.colorScheme.secondaryContainer
         ),
         actions = {
-            IconButton(
-                onClick = { navController.navigate(Screen.Messages.route) }
-            ) {
-                Icon(Icons.Filled.Info, contentDescription = "Info")
+
+            Row {
+                IconButton(
+                    onClick = { navController.navigate(Screen.Messages.route + "/${currentLocationPressed}") }
+                ) {
+                    Icon(Icons.Filled.Info, contentDescription = stringResource(R.string.info))
+                }
+                IconButton(
+                    onClick = { navController.navigate(Screen.Main.route + "/${0.0}/${0.0}") }
+                ) {
+                    Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.home))
+                }
             }
         }
     )
-}
-
-fun getLocationText(location: Location?): String {
-    return """
-       Lat: ${location?.latitude}
-       Lng: ${location?.longitude}
-       Alt: ${location?.altitude}
-       Speed: ${location?.speed}
-       Accuracy: ${location?.accuracy}
-    """.trimIndent()
 }

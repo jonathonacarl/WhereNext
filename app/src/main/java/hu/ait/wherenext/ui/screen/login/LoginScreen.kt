@@ -30,7 +30,7 @@ fun LoginScreen(
     var password by rememberSaveable { mutableStateOf("123456") }
     val coroutineScope = rememberCoroutineScope()
 
-    Box() {
+    Box {
         Text(
             text = "Where Next?",
             modifier = Modifier
