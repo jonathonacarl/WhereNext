@@ -39,7 +39,8 @@ fun MainScreen(
     messagesViewModel: MessagesViewModel = viewModel(),
     navController: NavController,
     latitude: Double,
-    longitude: Double
+    longitude: Double,
+    zoomPost: Boolean = false
 ) {
 
     val postListState = messagesViewModel.postsList().collectAsState(
@@ -51,8 +52,6 @@ fun MainScreen(
     var showPost by remember { mutableStateOf(false) }
 
     var currentLocationPressed by remember { mutableStateOf(false) }
-
-    var firstLogin by remember { mutableStateOf(true) }
 
     Scaffold(
         topBar = {
@@ -66,7 +65,6 @@ fun MainScreen(
             MainFloatingActionButton(
                 onWriteNewPostClick = {
                     navController.navigate(Screen.WritePin.route + "/${0.0}/${0.0}/${currentLocationPressed}")
-                    firstLogin = false
                 }
             )
         },
@@ -95,15 +93,15 @@ fun MainScreen(
                 )
             }
 
-            val cameraPositionState = if (firstLogin) {
-                rememberCameraPositionState {
-                    position = CameraPosition.fromLatLngZoom(LatLng(latitude, longitude), 0f)
-                }
-            } else {
-                rememberCameraPositionState {
-                    position = CameraPosition.fromLatLngZoom(LatLng(latitude, longitude), 16f)
-                }
-            }
+//            val cameraPositionState = if (zoomPost) {
+//                rememberCameraPositionState {
+//                    position = CameraPosition.fromLatLngZoom(LatLng(latitude, longitude), 0f)
+//                }
+//            } else {
+//                rememberCameraPositionState {
+//                    position = CameraPosition.fromLatLngZoom(LatLng(latitude, longitude), 2f)
+//                }
+//            }
 
             var mapProperties by remember {
                 mutableStateOf(
@@ -161,12 +159,11 @@ fun MainScreen(
                 modifier = Modifier.fillMaxSize(),
                 uiSettings = uiSettings,
                 properties = mapProperties,
-                cameraPositionState = cameraPositionState,
+                //cameraPositionState = cameraPositionState,
                 onMapClick = {
                     navController.navigate(Screen.WritePin.route +
                             "/${it.latitude.toFloat()}/${it.longitude.toFloat()}/${currentLocationPressed}"
                     )
-                    firstLogin = false
                 }
             ) {
 
@@ -189,7 +186,6 @@ fun MainScreen(
                             onClick = {
                                 displayPost = pinPost.pinPostID
                                 showPost = true
-                                firstLogin = false
                                 true
                             },
                             tag = pinPost.pinPostID

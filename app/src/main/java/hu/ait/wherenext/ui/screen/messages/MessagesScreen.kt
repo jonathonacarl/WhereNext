@@ -102,16 +102,13 @@ fun PinCard(
         ),
         modifier = Modifier.padding(5.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .padding(10.dp)
-        ) {
+        Column {
             Row(
-                modifier = Modifier.padding(20.dp),
+                modifier = Modifier.padding(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = pinPost.title,
@@ -133,6 +130,7 @@ fun PinCard(
 
                         Text(
                             text = pinPost.address
+
                         )
                     }
 

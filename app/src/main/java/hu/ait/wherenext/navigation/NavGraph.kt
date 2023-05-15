@@ -28,10 +28,11 @@ fun NavGraph(
                 navController.navigate(Screen.Main.route + "/${0.0}/${0.0}")
             })
         }
-        composable(Screen.Main.route + "/{latitude}/{longitude}",
+        composable(Screen.Main.route + "/{latitude}/{longitude}?zoomPost={zoomPost}",
             arguments = listOf(
                 navArgument("latitude") { type = NavType.FloatType },
-                navArgument("longitude") { type = NavType.FloatType }
+                navArgument("longitude") { type = NavType.FloatType },
+                navArgument("zoomPost") { defaultValue = false }
             )
 
         ) {
@@ -87,9 +88,17 @@ fun NavGraph(
                     currLocationPressed = currentLocationPressed,
                     onWritePinSuccess = {
                         navController.popBackStack(
-                            Screen.Main.route + "/${latitude.toDouble()}/${longitude.toDouble()}",
-                            false
+                            route = Screen.Main.route + "/${latitude.toDouble()}/${longitude.toDouble()}/${true}",
+                            inclusive = false
                         )
+
+//                        navController.navigate(Screen.Main.route + "/${latitude.toDouble()}/${longitude.toDouble()}")
+//                        {
+//
+//                            popUpTo(Screen.Main.route + "/${latitude.toDouble()}/${longitude.toDouble()}/${true}") {
+//                                inclusive = false
+//                            }
+//                        }
                     },
                     navController = navController
                 )

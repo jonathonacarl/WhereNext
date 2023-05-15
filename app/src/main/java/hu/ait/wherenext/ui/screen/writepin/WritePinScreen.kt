@@ -30,6 +30,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import hu.ait.wherenext.R
 import hu.ait.wherenext.data.LatLng
+import hu.ait.wherenext.navigation.Screen
 import hu.ait.wherenext.ui.screen.main.LocationViewModel
 import hu.ait.wherenext.ui.screen.main.MainTopBar
 import java.io.File
@@ -56,7 +57,7 @@ fun WritePinScreen(
 
     var postTitleStateError by rememberSaveable { mutableStateOf(true) }
     var postBodyStateError by rememberSaveable { mutableStateOf(true) }
-    var locationError by rememberSaveable { mutableStateOf(true) }
+    var wasMapPressed by rememberSaveable { mutableStateOf(latitude != 0.0 && longitude != 0.0) }
 
     val locationState = locationViewModel.getLocationLiveData().observeAsState()
     val context = LocalContext.current
@@ -143,19 +144,29 @@ fun WritePinScreen(
                 OutlinedTextField(value =
                 if (currentLocationPressed) {
                     stringResource(R.string.currentLocation)
-                } else {
+                } else if (wasMapPressed) {
+                    val geocoder = Geocoder(context, Locale.getDefault())
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        geocoder.getFromLocation(latitude, longitude, 3)
+                        { addresses ->
+                            val address: Address = addresses[0]
+                            cityLocation = address.getAddressLine(0)
+                        }
+                    }
                     cityLocation
-                },
+
+                } else {
+                       cityLocation
+                       },
                     enabled = !currentLocationPressed,
                     modifier = Modifier.weight(0.3f),
                     label = { Text(text = stringResource(R.string.location)) },
                     onValueChange = {
                         cityLocation = it
-                        locationError = cityLocation.isEmpty()
                     },
-                    isError = locationError && !currentLocationPressed,
+                    isError = cityLocation.isEmpty() && !currentLocationPressed,
                     trailingIcon = {
-                        if (locationError && !currentLocationPressed) {
+                        if (cityLocation.isEmpty() && !currentLocationPressed) {
                             Icon(
                                 Icons.Filled.Warning,
                                 stringResource(R.string.error),
@@ -165,15 +176,11 @@ fun WritePinScreen(
                     }
                 )
 
-                // if user allows for location tracking, display this button
-                if (fineLocationPermissionState.status.isGranted) {
-
-                    Button(onClick = {
-                        location = locationState.value?.let { LatLng(it.latitude, it.longitude) }!!
-                        currentLocationPressed = !currentLocationPressed
-                    }, enabled = locationViewModel.firstPositionArrived) {
-                        Text(text = stringResource(R.string.currentLocation))
-                    }
+                Button(onClick = {
+                    location = locationState.value?.let { LatLng(it.latitude, it.longitude) }!!
+                    currentLocationPressed = !currentLocationPressed
+                }, enabled = locationViewModel.firstPositionArrived) {
+                    Text(text = stringResource(R.string.currentLocation))
                 }
             }
 
@@ -256,7 +263,7 @@ fun WritePinScreen(
                         )
                     }
                 },
-                enabled = !postTitleStateError && !postBodyStateError && (!locationError || currentLocationPressed)
+                enabled = !postTitleStateError && !postBodyStateError && (cityLocation.isNotEmpty() || currentLocationPressed)
             ) {
                 Text(text = stringResource(R.string.upload))
             }
